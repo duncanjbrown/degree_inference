@@ -1,0 +1,6 @@
+.env
+30-epoch*
+results/
+.ipynb*
+.venv
+__pycache__
