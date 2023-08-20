@@ -1,12 +1,12 @@
 from dotenv import load_dotenv
+import time
+import json
+import csv
+import sys
+import logging
 from os import getenv
-import pandas as pd
-import openai
-from google.cloud import bigquery
 
-from degree_inference import openai
-
-load_dotenv()
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
 
 class GPT:
     BASE_QUERY = """
@@ -30,84 +30,23 @@ class GPT:
         self.openai_client = openai_client
         self.bq_client = bq_client
 
-    def infer(self):
-        degrees = list(self.bq_client.query(self.degree_query()).to_dataframe().degree_subject)
-        return self.openai_client.complete(degrees)
+    def infer(self, outdir="gpt_output", n=200):
+        outfile = f"{outdir}/{int(time.time())}.csv"
 
-    def chunks(lst, n):
-        """Yield successive n-sized chunks from lst."""
-        for i in range(0, len(lst), n):
-            yield lst[i:i + n]
+        with open(outfile, "w") as file:
+            file.write("text,label\n")
 
-    def degree_query(self):
-        return self.BASE_QUERY + " SELECT degree_subject FROM free_text_degrees"
+            for chunk in self.degrees(n=n):
+                logging.info(f"Writing to {outfile}")
+                logging.info(f"Completing {len(chunk)} degrees...")
+                file.write(self.openai_client.complete(chunk))
+                logging.info(json.dumps(self.openai_client.stats()))
 
+        return outfile
 
-# def available_rows(self):
-
-
-def run():
-    # openai.api_key = getenv('OPENAI_API_KEY')
-    print(getenv('OPENAI_API_KEY'))
-    exit
-
-    cah_mappings = pd.read_csv('./data/HECoS_CAH_Mappings.csv')
-    cah3_mappings = cah_mappings[['CAH3_Code', 'CAH3_Label']].drop_duplicates()
-    c = cah3_mappings.to_csv(sep="\t")
-
-    system_message = f"""
-        Your purpose classify degree subjects into the Common Aggregation Heirarchy (CAH).
-        The following is a list of all the CAH codes.
-
-        {c}
-
-        I will be asking you to classify lists of degree subjects according to this taxonomy.
-        """
-
-
-
-    def get_unmapped_degrees():
-        client = bigquery.Client()
-        query = """
-        SELECT
-            cq.subject AS degree_subject,
-            cq.degree_subject_cah_l3,
-            cah_codes.name AS cah_category_name
-        FROM
-            `rugged-abacus-218110.dataform_ABS_2_dev.application_choice_details`
-        LEFT JOIN
-            UNNEST(candidate_qualifications) AS cq
-        LEFT JOIN `rugged-abacus-218110.dfe_reference_data.cah_categories_l3_v2` AS cah_codes ON cah_codes.id = degree_subject_cah_l3
-        WHERE degree_level IS NOT NULL AND degree_level !='unknown'
-        AND degree_subject_cah_l3 IS NULL
-        GROUP BY
-            degree_subject,
-            degree_subject_cah_l3,
-            cah_category_name
-        LIMIT 200
-        OFFSET 1000
-        """
-
-        return list(client.query(query).to_dataframe().degree_subject)
-
-    def map_degrees(degrees):
-        for chunk in chunks(degrees, 200):
-            classification_query = (
-                    "Classify the following degrees according to the CAH. For each degree, return the degree and the CAH category in CSV format.\n"
-                    f"{chunk}"
-            )
-
-            answer = openai.ChatCompletion.create(
-                model="gpt-4",
-                messages=[
-                        {"role": "system", "content": system_message},
-                        {"role": "user", "content": classification_query},
-                    ]
-                )
-
-            yield answer["choices"][0]["message"]["content"]
-
-    if __name__ == "__main__":
-        for csv in map_degrees(get_unmapped_degrees()):
-            print(csv)
-
+    def degrees(self, n=200, chunk_size=200):
+        """Yield n degrees in chunks of chunk_size"""
+        n_degrees = self.bq_client.get_degrees()[:n]
+        # deal in chunks of 200 for 8k context window
+        for i in range(0, len(n_degrees), chunk_size):
+            yield n_degrees[i:i + chunk_size]

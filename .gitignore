@@ -1,6 +1,7 @@
 .env
-30-epoch*
+models
 results/
+gpt_output/*.csv
 .ipynb*
 .venv
 __pycache__

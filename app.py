@@ -1,38 +1,23 @@
-import csv
-import sys
-from transformers import BertForSequenceClassification
+import click
+from degree_inference.openai import OpenAIClient
+from degree_inference.bigquery import BigQueryClient
 
-from degree_inference.cah_data import CAHData
-from degree_inference.predict import predict
+@click.group()
+def cli():
+    pass
 
-degrees= [
-        'mechanical engineering',
-        'fashion design',
-        'early childhood studies',
-        'horticulture',
-        'textile design',
-        'geography',
-        'developmental psychology',
-        'history',
-        'dance',
-        'psychology',
-        'pharmacy',
-        'biology',
-        'criminology',
-        'chemical engineering',
-        'philosophy',
-        'health studies',
-        'sociology',
-]
+@cli.command(help="Send unstructured data to GPT-4")
+def gpt():
+    from degree_inference.gpt import GPT
 
-data = CAHData()
-model = BertForSequenceClassification.from_pretrained('./30-epoch-gpt2-ilr-augmented-1e-5/', num_labels=len(data.df['label'].unique()))
-model.to("cpu")
+    gpt = GPT(OpenAIClient(), BigQueryClient())
+    gpt.infer(n=10)
 
-rows = predict(data,model,degrees)
+@cli.command(help="Run inference")
+def infer():
+    from cli import inference
 
-writer = csv.writer(sys.stdout)
-writer.writerow(["Degree name", "CAH3 code", "CAH3 category"])
-for row in rows:
-    writer.writerow(row)
+    inference.run()
 
+if __name__ == "__main__":
+    cli()

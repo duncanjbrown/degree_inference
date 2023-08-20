@@ -1,0 +1,10 @@
+[tool.pytest.ini_options]
+pythonpath = [
+  "."
+]
+filterwarnings = [
+    "ignore:Deprecated call to `pkg_resources\\.declare_namespace\\('.*'\\):DeprecationWarning",
+    "ignore::DeprecationWarning:google.rpc",
+]
+testpaths = ["test"]
+

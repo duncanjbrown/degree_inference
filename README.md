@@ -40,6 +40,8 @@ The `/data` folder contains the training data:
   "official" degrees
 - 2000 rows of mappings from "unofficial" degrees, produced by GPT-4
 
+To generate more GPT data, run `python app.py gpt`.
+
 ### Todo
 
 - Accept STDIN/file input, not just hardcoded strings in the file
