@@ -27,7 +27,7 @@ class BigQueryClient:
 
     def get_degrees(self):
         query = self.BASE_QUERY + " SELECT degree_subject FROM free_text_degrees"
-        return list(self.client.query(query).to_dataframe().degree_subject)
+        return list(self.client.query(query).to_dataframe().dropna().degree_subject)
 
     def count_degrees(self):
         query = self.BASE_QUERY + " SELECT COUNT(*) as count FROM free_text_degrees"

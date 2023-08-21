@@ -31,6 +31,26 @@ class CAHData:
     def class_weights(self):
         return compute_class_weight('balanced', classes=self.df['label'].unique(), y=list(self.df['label']))
 
+    def ilr_mappings(self):
+        # Large manually mapped list from ILR
+        df = pd.read_csv('data/ilr_cah.csv')
+        df = df.rename(columns={'LDCS_name':"text","CAH3 code":"label"})
+        df = df[['text', 'label']]
+
+        # remove names with numbers in as these are likely to be junk
+        df = df.dropna(subset=['text'])
+        df = df.dropna(subset=['label'])
+        df = df[~df['text'].str.contains('\d')]
+        df = df[~df['text'].str.contains('\w\w\.')]
+
+        # format CAH codes consistently
+        df['label'] = df['label'].str.replace('CAH', '')
+
+        # Remove rescinded codes
+        df = df[~df['label'].isin(self.rescinded_codes())]
+
+        return df
+
     def load(self):
         # Every mapping of degree to CAH3 from HECoS
         csv = pd.read_csv('data/HECoS_CAH_Mappings.csv')
@@ -38,29 +58,18 @@ class CAHData:
         df = df[['text', 'label']]
 
         if(self.include_ilr):
-            # Large manually mapped list from ILR
-            bm = pd.read_csv('data/ilr_cah.csv')
-            bm = bm.rename(columns={'LDCS_name':"text","CAH3 code":"label"})
-            bm = bm[['text', 'label']]
-            
-            # remove names with numbers in as these are likely to be junk
-            bm = bm.dropna(subset=['text'])
-            bm = bm.dropna(subset=['label'])
-            bm = bm[~bm['text'].str.contains('\d')]
-            bm = bm[~bm['text'].str.contains('\w\w.')]
-            # format CAH codes consistently
-            bm['label'] = bm['label'].str.replace('CAH', '')
-        
-            df = pd.concat([df, bm])
-            df = df[~df['label'].isin(self.rescinded_codes())]
-        
+            df = pd.concat([df, self.ilr_mappings()])
+
         if(self.include_gpt_inferences):
-            gpt_inferences = pd.read_csv('data/1k-gpt4-13-08.csv')
-            gpt_inferences['text'] = gpt_inferences['text'].str.lower()
-            gpt_inferences2 = pd.read_csv('data/1k-gpt4-14-08.csv')
-            gpt_inferences2['text'] = gpt_inferences2['text'].str.lower()
-            # gpt_inferences['label'] = string(gpt_inferences['label'])
-            df = pd.concat([df, gpt_inferences, gpt_inferences2])
+            gpt_inferences = pd.read_csv('data/gpt-4-4k.csv')
+            df = pd.concat([df, gpt_inferences])
+
+        df['text'] = df['text'].str.lower()
+        df['label'] = df['label'].str.strip()
+        return df.sample(frac=1)
+
+    def datasets(self):
+        train, test = train_test_split(self.df, test_size=0.2)
     
         def replace_synonym(sentence, prob=0.5):
             words = sentence.split()
@@ -80,16 +89,9 @@ class CAHData:
             return ' '.join(augmented_words)
         
         if(self.augment):
-            df_augmented = df.copy()
-            df_augmented['text'] = df_augmented['text'].apply(replace_synonym)
-            df = pd.concat([df, df_augmented], axis=0, ignore_index=True)
-            df = df.dropna(subset=['label'])
-
-        df['text'] = df['text'].str.lower()
-        return df.sample(frac=1)
-
-    def datasets(self):
-        train, test = train_test_split(self.df, test_size=0.2)
+            train_augmented = train.copy()
+            train_augmented['text'] = train_augmented['text'].apply(replace_synonym)
+            train = pd.concat([train, train_augmented], axis=0, ignore_index=True)
 
         train_texts = train['text'].tolist()
         test_texts = test['text'].tolist()

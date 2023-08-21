@@ -27,5 +27,18 @@ def test_integration(tmpdir):
     gpt = GPT(DummyOpenAIClient(), DummyBQClient(degrees=["science"]))
     outfile = gpt.infer(outdir=tmpdir)
     txt = Path(outfile).read_text()
-    assert txt == "text,label\nscience,science-gpt"
+    assert txt == "text,label\nscience,science-gpt\n"
+
+def test_offset(tmpdir):
+    gpt = GPT(DummyOpenAIClient(), DummyBQClient(degrees=["a", "b", "c"]))
+    outfile = gpt.infer(outdir=tmpdir,n=3, chunk_size=1, offset=2)
+    txt = Path(outfile).read_text()
+    assert txt == "text,label\nc,c-gpt\n"
+
+def test_chunk():
+    gpt = GPT(DummyOpenAIClient(), DummyBQClient(degrees=["a", "b", "c"]))
+    for chunk in gpt.degrees(n=3, chunk_size=1):
+        print("\n".join(chunk))
+
+
 

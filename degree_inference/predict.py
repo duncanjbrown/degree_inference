@@ -1,7 +1,9 @@
 import torch
 
 def predict(data,model,text_inputs):
-    inputs = data.tokenizer(text_inputs, return_tensors="pt", padding=True, truncation=True, max_length=512)
+    text_inputs = [s.strip() for s in text_inputs]
+    xs = [s.lower() for s in text_inputs]
+    inputs = data.tokenizer(xs, return_tensors="pt", padding=True, truncation=True, max_length=512)
 
     inputs = inputs.to("cpu")
     outputs = model(**inputs)

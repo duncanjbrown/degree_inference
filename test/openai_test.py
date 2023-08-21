@@ -24,7 +24,7 @@ def test_completion(openai_with_network_stub):
 def test_stats(openai_with_network_stub):
     client, rsps = openai_with_network_stub
     client.complete([])
-    assert '"prompt_token_usage": 13, "completion_token_usage": 7, "total_token_usage": 20, "cost": 0.001}' in json.dumps(client.stats())
+    assert '"prompt_token_usage": 13, "completion_token_usage": 7, "total_token_usage": 20, "duration": 0, "cost": 0.001}' in json.dumps(client.stats())
 
 def test_logging_token_usage(openai_with_network_stub):
     client, rsps = openai_with_network_stub
