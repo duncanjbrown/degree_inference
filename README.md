@@ -19,13 +19,12 @@ may need to adjust the `model.to()` call if your system doesn't support
 [Metal Performance
 Shaders](https://huggingface.co/docs/accelerate/usage_guides/mps).
 
-Run `tensorboard` while training to see graphs.
+Run `tensorboard` while training to see loss graphs.
 
 Once the model is trained you can save it and load it --- see the last
 cell in the notebook, and `app.py`, for examples.
 
-Then to run inference on a set of example degrees hardcoded in the
-`app.py` file, run `python app.py`.
+To run inference, involve `python app-py infer --input {input_file} --model {model_path}`
 
 The output will be a CSV with columns for degree name (the input), CAH3
 code (the output) and the human-readable CAH3 category.
@@ -38,9 +37,9 @@ The `/data` folder contains the training data:
   `CAHData`)
 - the original HECoS \> CAH mapping which exhaustively lists
   "official" degrees
-- 2000 rows of mappings from "unofficial" degrees, produced by GPT-4
+- 4000 rows of mappings from "unofficial" degrees, produced by GPT-4
 
-To generate more GPT data, run `python app.py gpt`.
+To generate more GPT data, run `python app.py gpt --count 4000`.
 
 ### Todo
 
