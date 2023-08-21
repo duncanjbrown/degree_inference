@@ -40,11 +40,3 @@ The `/data` folder contains the training data:
 - 4000 rows of mappings from "unofficial" degrees, produced by GPT-4
 
 To generate more GPT data, run `python app.py gpt --count 4000`.
-
-### Todo
-
-- Accept STDIN/file input, not just hardcoded strings in the file
-- and downcase input so it works better with the model
-- A nice way to organise training run logs and file away models
-- accept additional input fields so we can map to IDs
-- env var for model location
